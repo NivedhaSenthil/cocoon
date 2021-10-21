@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 echo "Enter a project name:"
 read COCOON_PROJECT_ID
 

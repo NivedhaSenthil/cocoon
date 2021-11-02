@@ -35,6 +35,7 @@ gcloud auth login
 # create a gcp project
 COCOON_PROJECT_ID=$COCOON_PROJECT_ID COCOON_BILLING_ACCOUNT_ID=$COCOON_BILLING_ACCOUNT_ID ruby $COCOON_HOME/clients/deploy_appengine.rb
 gcloud config set project $COCOON_PROJECT_ID
+COCOON_PROJECT_NUMBER=$(gcloud projects describe starterproject-329009 --format='value(projectNumber)')
 
 echo "Provide details for cloudSQL:"
 echo "DB Instance name:"
@@ -46,16 +47,28 @@ read COCOON_DB_NAME
 echo "Instance Region:"
 read COCOON_REGION
 
-echo "Root user password:"
-read COCOON_DB_ROOT_PASSWORD
+# generate dbpassword
+cat /dev/urandom | LC_ALL=C tr -dc '[:alpha:]'| fold -w 50 | head -n1 >> dbpassword
+EDITOR='printf "\ngcp:\n  db_password: $(cat dbpassword)" >> ' rails credentials:edit
+
+# setup secret manager
+gcloud secrets create $COCOON_DB_INSTANCE_NAME --data-file config/master.key
+
+# setup permissions
+COMPUTE_MEMBER="serviceAccount:$COCOON_PROJECT_NUMBER-compute@developer.gserviceaccount.com"
+BUILD_MEMBER="serviceAccount:$COCOON_PROJECT_NUMBER@cloudbuild.gserviceaccount.com"
+ROLE="roles/secretmanager.secretAccessor"
+
+gcloud secrets add-iam-policy-binding $COCOON_DB_INSTANCE_NAME --member $COMPUTE_MEMBER --role $ROLE
+gcloud secrets add-iam-policy-binding $COCOON_DB_INSTANCE_NAME --member $BUILD_MEMBER --role $ROLE
 
 # setup cloudsql instance 
 gcloud sql instances create $COCOON_DB_INSTANCE_NAME  --tier=db-f1-micro  --region=$COCOON_REGION
 gcloud sql databases create $COCOON_DB_NAME  --instance=$COCOON_DB_INSTANCE_NAME 
-gcloud sql users set-password root --host=% --instance $COCOON_DB_INSTANCE_NAME --password $COCOON_DB_ROOT_PASSWORD 
+gcloud sql users set-password root --host=% --instance $COCOON_DB_INSTANCE_NAME --password $(cat dbpassword)
 
 USER_NAME="s/<YOUR_MYSQL_USERNAME>/root/g"
-PASSWORD="s/<YOUR_MYSQL_PASSWORD>/$COCOON_DB_ROOT_PASSWORD/g"
+PASSWORD="s/<YOUR_MYSQL_PASSWORD>/$(cat dbpassword)/g"
 DATABASE_NAME="s/<YOUR_DATABASE_NAME>/$COCOON_DB_NAME/g"
 CONNECTION_STRING="s/<YOUR_INSTANCE_CONNECTION_NAME>/$COCOON_PROJECT_ID:$COCOON_REGION:$COCOON_DB_INSTANCE_NAME/g"
 sed "$USER_NAME;$PASSWORD;$CONNECTION_STRING;$DATABASE_NAME" $COCOON_HOME/rails_templates/template_database.yml > ./config/database.yml
@@ -67,6 +80,9 @@ bundle exec bin/rails assets:precompile
 
 #run db migration
 bundle exec rake appengine:exec -- bundle exec rake db:migrate
+
+#cleanup
+rm dbpassword
 
 # deploy the app
 gcloud app create

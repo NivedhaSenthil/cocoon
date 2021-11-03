@@ -34,7 +34,7 @@ gcloud auth login
 # create a gcp project
 COCOON_PROJECT_ID=$COCOON_PROJECT_ID COCOON_BILLING_ACCOUNT_ID=$COCOON_BILLING_ACCOUNT_ID ruby $COCOON_HOME/clients/deploy_appengine.rb
 gcloud config set project $COCOON_PROJECT_ID
-COCOON_PROJECT_NUMBER=$(gcloud projects describe starterproject-329009 --format='value(projectNumber)')
+COCOON_PROJECT_NUMBER=$(gcloud projects describe $COCOON_PROJECT_ID --format='value(projectNumber)')
 
 echo "Provide details for cloudSQL:"
 echo "DB Instance name:"

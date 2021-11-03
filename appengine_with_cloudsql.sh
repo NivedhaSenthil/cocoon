@@ -16,7 +16,6 @@ echo $(pwd)
 bundle exec rails generate scaffold Cat name:string age:integer
 
 # update route and index page 
-cp $COCOON_HOME/rails_templates/template_index.html.erb ./app/views/welcome/index.html.erb
 cp $COCOON_HOME/rails_templates/template_cats_route.rb ./config/routes.rb
 
 # fix bundler
@@ -57,10 +56,12 @@ gcloud secrets create $COCOON_DB_INSTANCE_NAME --data-file config/master.key
 # setup permissions
 COMPUTE_MEMBER="serviceAccount:$COCOON_PROJECT_NUMBER-compute@developer.gserviceaccount.com"
 BUILD_MEMBER="serviceAccount:$COCOON_PROJECT_NUMBER@cloudbuild.gserviceaccount.com"
-ROLE="roles/secretmanager.secretAccessor"
+SECRET_ROLE="roles/secretmanager.secretAccessor"
+PROJECT_ROLE="roles/editor"
 
-gcloud secrets add-iam-policy-binding $COCOON_DB_INSTANCE_NAME --member $COMPUTE_MEMBER --role $ROLE
-gcloud secrets add-iam-policy-binding $COCOON_DB_INSTANCE_NAME --member $BUILD_MEMBER --role $ROLE
+gcloud secrets add-iam-policy-binding $COCOON_DB_INSTANCE_NAME --member $COMPUTE_MEMBER --role $SECRET_ROLE
+gcloud secrets add-iam-policy-binding $COCOON_DB_INSTANCE_NAME --member $BUILD_MEMBER --role $SECRET_ROLE
+gcloud projects add-iam-policy-binding $COCOON_PROJECT_ID --member $BUILD_MEMBER --role $PROJECT_ROLE
 
 # setup cloudsql instance 
 gcloud sql instances create $COCOON_DB_INSTANCE_NAME  --tier=db-f1-micro  --region=$COCOON_REGION

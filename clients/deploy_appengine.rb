@@ -3,13 +3,13 @@ require "google/cloud/billing"
 
 def create_project()
 
-    project_name = ENV["COCOON_PROJECT_ID"]
+    project_id = ENV["COCOON_PROJECT_ID"]
 
-    raise "project name is needed to create a GCP project" if project_name.nil?
+    raise "project name is needed to create a GCP project" if project_id.nil?
 
     resource_manager = Google::Cloud::ResourceManager.new
     project = resource_manager.create_project project_id,
-                                              name: project_name
+                                              name: project_id
 
     p "Project created with id #{project_id}"  
 

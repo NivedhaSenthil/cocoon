@@ -40,6 +40,8 @@ COCOON_PROJECT_NUMBER=$(gcloud projects describe $COCOON_PROJECT_ID --format='va
 gcloud services enable serviceusage.googleapis.com
 gcloud services enable cloudbuild.googleapis.com
 gcloud services enable sqladmin.googleapis.com
+gcloud services enable appengineflex.googleapis.com
+gcloud services enable appengine.googleapis.com
 gcloud app create
 
 echo "Provide details for cloudSQL:"
